@@ -3,7 +3,7 @@ A PyTorch implementation of the BERT4Rec
 BERT4Rec is a model from the paper, 
 * Sun, F., Liu, J., Wu, J., Pei, C., Lin, X., Ou, W., & Jiang, P. (2019, November). BERT4Rec: Sequential recommendation with bidirectional encoder representations from transformer. In Proceedings of the 28th ACM international conference on information and knowledge management (pp. 1441-1450).
 
-Here are two datasets in this repo... After downloaded the datasets, you can put them in the folder `datasets/`
+Here are two datasets used in this repo... After downloading the datasets, you can put them in the folder `datasets/`
 
 * [YOOCHOOSE](https://www.kaggle.com/chadgostopp/recsys-challenge-2015)
 * [DIGNETICA](https://competitions.codalab.org/competitions/11161)
