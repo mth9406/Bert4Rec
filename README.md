@@ -3,33 +3,33 @@ A PyTorch implementation of the BERT4Rec
 BERT4Rec is a model from the paper, 
 * Sun, F., Liu, J., Wu, J., Pei, C., Lin, X., Ou, W., & Jiang, P. (2019, November). BERT4Rec: Sequential recommendation with bidirectional encoder representations from transformer. In Proceedings of the 28th ACM international conference on information and knowledge management (pp. 1441-1450).
 
-Here are two datasets in this repo... After downloaded the datasets, you can put them in the folder <div class="boxBorder">datasets/</div>
+Here are two datasets in this repo... After downloaded the datasets, you can put them in the folder `datasets/`
 
 * [YOOCHOOSE](https://www.kaggle.com/chadgostopp/recsys-challenge-2015)
 * [DIGNETICA](https://competitions.codalab.org/competitions/11161)
 
 # How to use
-First of all, run the file <div class="boxBorder">datasets/preprocess.py</div> to preprocess "YOOCHOOSE" or "DIGNETICA".
+First of all, run the file `datasets/preprocess.py` to preprocess "YOOCHOOSE" or "DIGNETICA".
 
-<div class="boxBorder">
+```bash
 usage: preprocess.py [-h] [--dataset DATASET]
 
 optional arguments:
   -h, --help         show this help message and exit
   --dataset DATASET  dataset name: diginetica/yoochoose/sample
-</div>
+```
 
-<div class="boxBorder">
+```bash
 usage: main.py [-h] [--dataset_path DATASET_PATH] [--batch_size BATCH_SIZE]
                [--epoch EPOCH] [--lr LR] [--lr_dc LR_DC]
                [--lr_dc_step LR_DC_STEP] [--model_type MODEL_TYPE] [--N N]
                [--hidden_dim HIDDEN_DIM] [--num_head NUM_HEAD]
                [--inner_dim INNER_DIM] [--max_length MAX_LENGTH] [--test]
                [--topk TOPK] [--valid_portion VALID_PORTION]
-</div>
+```
 
 # Optional arguments
-<div class="boxBorder">
+```bash
 optional arguments:
   -h, --help            show this help message and exit
   --dataset_path DATASET_PATH
@@ -58,4 +58,4 @@ optional arguments:
                         recall and mrr metrics, default= 20
   --valid_portion VALID_PORTION
                         split the portion of training set as validation set
-</div>
+```
