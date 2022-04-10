@@ -28,9 +28,10 @@ class Bert4Rec(nn.Module):
         self.dropout = nn.Dropout(0.1)
 
     def forward(self, input):
+        device= input.device
         bs, item_len = input.shape[:2] # 0, 1
-        mask = makeMask(input, option = 'padding')
-        pos = torch.arange(0, item_len).unsqueeze(0).repeat(bs, 1) 
+        mask = makeMask(input, option = 'padding').to(device)
+        pos = torch.arange(0, item_len).unsqueeze(0).repeat(bs, 1).to(device)
         # (bs, item_len)
         # [[0, 1, 2, ..., item_len-1],...,[0, 1, 2, ..., item_len-1]]
 

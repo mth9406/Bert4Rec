@@ -13,7 +13,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 
 from dataset import load_data, RecSysDataset
-from metric import *
+# from metric import *
 from models import Bert4Rec
 from utils import *
 
@@ -29,6 +29,7 @@ parser.add_argument('--epoch', type=int, default=100, help='the number of epochs
 parser.add_argument('--lr', type=float, default=0.001, help='learning rate')  
 parser.add_argument('--lr_dc', type=float, default=0.1, help='learning rate decay rate')
 parser.add_argument('--lr_dc_step', type=int, default=80, help='the number of steps after which the learning rate decay') 
+parser.add_argument('--patience', type=int, default=30, help='patience of early stopping condition')
 
 # Model configs
 parser.add_argument('--model_type', type= str, default= 0, 
@@ -75,28 +76,34 @@ def main():
         raise Exception('Unknown Dataset!')
 
     if args.model_type == 0:
-        model = Bert4Rec(n_items, args.N, args.hidden_dim, args.num_head, args.inner_dim, args.max_length)
+        model = Bert4Rec(n_items, args.N, args.hidden_dim, args.num_head, args.inner_dim, args.max_length).to(device)
     else: 
         raise Exception("Unknown model!")
     
     if args.test:
         ckpt = torch.load('latest_checkpoint.pth.tar')
+        criterion = nn.CrossEntropyLoss()
         model.load_state_dict(ckpt['state_dict'])
-        recall, mrr = validate(test_loader, model)
-        print("Test: Recall@{}: {:.4f}, MRR@{}: {:.4f}".format(args.topk, recall, args.topk, mrr))
+        recall, mrr, val_loss = validate(test_loader, model, criterion)
+        print("Test: Recall@{}: {:.4f}, MRR@{}: {:.4f},  Val_loss: {:.4f}".format(args.topk, recall, args.topk, mrr, val_loss))
         return    
 
     optimizer = optim.Adam(model.parameters(), args.lr)
     criterion = nn.CrossEntropyLoss()
     scheduler = StepLR(optimizer, step_size = args.lr_dc_step, gamma = args.lr_dc)
     
+    early_stopping = EarlyStopping(
+            patience= args.patience,
+            verbose= True
+        )
+
     for epoch in tqdm(range(args.epoch)):
         # train for one epoch
-        scheduler.step(epoch = epoch)
         trainForEpoch(train_loader, model, optimizer, epoch, args.epoch, criterion, log_aggr = 200)
+        scheduler.step()
 
-        recall, mrr = validate(valid_loader, model)
-        print('Epoch {} validation: Recall@{}: {:.4f}, MRR@{}: {:.4f} \n'.format(epoch, args.topk, recall, args.topk, mrr))
+        recall, mrr, val_loss = validate(valid_loader, model, criterion)
+        print('Epoch {} validation: Recall@{}: {:.4f}, MRR@{}: {:.4f}, Val_loss: {:.4f} \n'.format(epoch, args.topk, recall, args.topk, mrr, val_loss))
 
         # store best loss and save a model checkpoint
         ckpt_dict = {
@@ -104,26 +111,89 @@ def main():
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict()
         }
+        early_stopping(val_loss, model, epoch, optimizer)
+        # torch.save(ckpt_dict, 'latest_checkpoint.pth.tar')    
 
-        torch.save(ckpt_dict, 'latest_checkpoint.pth.tar')    
+def get_recall(indices, targets):
+    """
+    Calculates the recall score for the given predictions and targets
 
-def validate(valid_loader, model):
+    Args:
+        indices (Bxk): torch.LongTensor. top-k indices predicted by the model.
+        targets (B): torch.LongTensor. actual target indices.
+
+    Returns:
+        recall (float): the recall score
+    """
+
+    targets = targets.view(-1, 1).expand_as(indices) # Bxk
+    hits = (targets == indices).nonzero() # B
+    if len(hits) == 0:
+        return 0
+    n_hits = (targets == indices).nonzero()[:, :-1].size(0)
+    recall = float(n_hits) / targets.size(0)
+    return recall
+
+
+def get_mrr(indices, targets):
+    """
+    Calculates the MRR score for the given predictions and targets
+    Args:
+        indices (Bxk): torch.LongTensor. top-k indices predicted by the model.
+        targets (B): torch.LongTensor. actual target indices.
+
+    Returns:
+        mrr (float): the mrr score
+    """
+
+    tmp = targets.view(-1, 1)
+    targets = tmp.expand_as(indices)
+    hits = (targets == indices).nonzero()
+    ranks = hits[:, -1] + 1
+    ranks = ranks.float()
+    rranks = torch.reciprocal(ranks)
+    mrr = torch.sum(rranks).data / targets.size(0)
+    return mrr.item()
+
+
+def get_recall_mrr(indices, targets, k=20):
+    """
+    Evaluates the model using Recall@K, MRR@K scores.
+
+    Args:
+        logits (B,C): torch.LongTensor. The predicted logit for the next items.
+        targets (B): torch.LongTensor. actual target indices.
+
+    Returns:
+        recall (float): the recall score
+        mrr (float): the mrr score
+    """
+    _, indices = torch.topk(indices, k, -1)
+    recall = get_recall(indices, targets)
+    mrr = get_mrr(indices, targets)
+    return recall, mrr
+
+def validate(valid_loader, model, criterion):
     model.eval()
     recalls = []
     mrrs = []
+    losses = []
     with torch.no_grad():
         for seq, target, lens in tqdm(valid_loader):
             seq = seq.to(device)
             target = target.to(device)
             outputs = model(seq)
+            loss = criterion(outputs, target)
             logits = F.softmax(outputs, dim = 1)
-            recall, mrr = evaluate(logits, target, k = args.topk)
+            recall, mrr = get_recall_mrr(logits, target, k = args.topk)
             recalls.append(recall)
             mrrs.append(mrr)
+            losses.append(loss.item())
     
     mean_recall = np.mean(recalls)
     mean_mrr = np.mean(mrrs)
-    return mean_recall, mean_mrr
+    mean_val_loss = np.mean(losses)
+    return mean_recall, mean_mrr, mean_val_loss
 
 def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, log_aggr=1):
     model.train()
