@@ -110,7 +110,7 @@ class FFN(nn.Module):
 
         self.fc1 = nn.Linear(hidden_dim, inner_dim)
         self.fc2 = nn.Linear(inner_dim, hidden_dim)
-        self.act = nn.ReLU(inplace=False)
+        self.act = nn.GELU(inplace=False)
         self.dropout = nn.Dropout(0.1)
     
     def forward(self, input):

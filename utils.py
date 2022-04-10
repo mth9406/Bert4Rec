@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import os
 
 def collate_fn(data):
     # data
@@ -24,11 +25,12 @@ class EarlyStopping(object):
 
     def __init__(self, 
                 patience: int= 10, 
-                verbose: bool= False, delta: float= 0):
+                verbose: bool= False, delta: float= 0,
+                path = './'):
         self.patience = patience
         self.verbose = verbose
         self.delta = delta # significant change
-
+        self.path = os.path.join(path, 'latest_checkpoint.pth.tar')
         self.best_score = None
         self.early_stop= False
         self.val_loss_min = np.Inf
@@ -59,5 +61,6 @@ class EarlyStopping(object):
     def save_checkpoint(self, val_loss, ckpt_dict):
         if self.verbose:
             print(f'Validation loss decreased: {self.val_loss_min:.4f} --> {val_loss:.4f}. Saving model...')
-        torch.save(ckpt_dict, 'latest_checkpoint.pth.tar') 
+        
+        torch.save(ckpt_dict, self.path) 
         self.val_loss_min = val_loss

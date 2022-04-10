@@ -14,7 +14,7 @@ from torch.optim.lr_scheduler import StepLR
 
 from dataset import load_data, RecSysDataset
 # from metric import *
-from models import Bert4Rec
+from models import Bert4Rec, GLBert4Rec
 from utils import *
 
 
@@ -30,10 +30,11 @@ parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
 parser.add_argument('--lr_dc', type=float, default=0.1, help='learning rate decay rate')
 parser.add_argument('--lr_dc_step', type=int, default=80, help='the number of steps after which the learning rate decay') 
 parser.add_argument('--patience', type=int, default=30, help='patience of early stopping condition')
+parser.add_argument('--model_path', type=str, default='./', help='a path to sava a model')
 
 # Model configs
 parser.add_argument('--model_type', type= str, default= 0, 
-                help= "the model type, 0: BERT4Rec")
+                help= "the model type, 0: BERT4Rec, 1:GLBert4Rec")
 parser.add_argument('--N', type= int, default= 12, 
                 help="the number of transformer encoder layers, default= 12")
 parser.add_argument('--hidden_dim', type= int, default= 512,
@@ -56,6 +57,9 @@ print(args)
 
 here = os.path.dirname(os.path.abspath(__file__))
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if not os.path.exists(args.model_path):
+    print("Making a path to save the model...")
+    os.makedirs(args.model_path, exist_ok=True)
 
 def main():
     print("Loading data...")
@@ -77,11 +81,14 @@ def main():
 
     if args.model_type == 0:
         model = Bert4Rec(n_items, args.N, args.hidden_dim, args.num_head, args.inner_dim, args.max_length).to(device)
+    elif args.model_type == 1:
+        model = GLBert4Rec(n_items, args.N, args.hidden_dim, args.num_head, args.inner_dim, args.max_length).to(device)
     else: 
         raise Exception("Unknown model!")
     
     if args.test:
-        ckpt = torch.load('latest_checkpoint.pth.tar')
+        model_file = os.path.join(args.model_path, 'latest_checkpoint.pth.tar')
+        ckpt = torch.load(model_file)
         criterion = nn.CrossEntropyLoss()
         model.load_state_dict(ckpt['state_dict'])
         recall, mrr, val_loss = validate(test_loader, model, criterion)
@@ -94,7 +101,8 @@ def main():
     
     early_stopping = EarlyStopping(
             patience= args.patience,
-            verbose= True
+            verbose= True,
+            path= args.model_path
         )
 
     for epoch in tqdm(range(args.epoch)):
@@ -106,13 +114,15 @@ def main():
         print('Epoch {} validation: Recall@{}: {:.4f}, MRR@{}: {:.4f}, Val_loss: {:.4f} \n'.format(epoch, args.topk, recall, args.topk, mrr, val_loss))
 
         # store best loss and save a model checkpoint
-        ckpt_dict = {
-            'epoch': epoch + 1,
-            'state_dict': model.state_dict(),
-            'optimizer': optimizer.state_dict()
-        }
+        # ckpt_dict = {
+        #     'epoch': epoch + 1,
+        #     'state_dict': model.state_dict(),
+        #     'optimizer': optimizer.state_dict()
+        # }
         early_stopping(val_loss, model, epoch, optimizer)
-        # torch.save(ckpt_dict, 'latest_checkpoint.pth.tar')    
+        # torch.save(ckpt_dict, 'latest_checkpoint.pth.tar')  
+        if early_stopping.early_stop:
+            break   
 
 def get_recall(indices, targets):
     """
