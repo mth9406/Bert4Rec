@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 def collate_fn(data):
     # data
@@ -16,6 +17,5 @@ def collate_fn(data):
         padded_sess[i, :lens[i]] = torch.LongTensor(sess)
         # [1,2,3] -> [1,2,3,0,..0] padded 0 up to a predefined max len.
         labels.append(label)
-    # padded_sess = padded_sess.transpose(0,1) 
+    padded_sess = padded_sess.transpose(0,1) 
     return padded_sess, torch.tensor(labels).long(), lens
-    

@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Datasets
+datasets/diginetica/
+datasets/yoochoose1_4/
+datasets/yoochoose1_64/
