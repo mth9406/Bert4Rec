@@ -22,6 +22,7 @@ class Bert4Rec(nn.Module):
         )
         self.projection = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
             nn.Linear(hidden_dim, n_items)
         )
 
