@@ -61,7 +61,7 @@ class GLBert4Rec(nn.Module):
         self.inner_dim = inner_dim
         self.max_length = max_length
 
-        self.embedding = nn.Embedding(num_embeddings= n_items, embedding_dim= hidden_dim, padding_idx= 0)
+        self.embedding = nn.Embedding(num_embeddings= n_items+1, embedding_dim= hidden_dim, padding_idx= 0) # including padding...
         self.pos_embedding = nn.Embedding(max_length, hidden_dim)
         self.enc_layers = nn.ModuleList(
             [EncoderLayer(hidden_dim, num_head, inner_dim) for _ in range(N)]
@@ -113,7 +113,7 @@ class GLBert4Rec(nn.Module):
         output = output.unsqueeze(1)
         # (bs, 1, hidden_dim)
         # obtain scores
-        output = output@(self.embedding.weight.T)
+        output = output@(self.embedding.weight[1:].T)
         # (bs, 1, hidden_dim) @ (hidden_dim, n_items)
         # (bs, 1, V)
         output = output.squeeze()
