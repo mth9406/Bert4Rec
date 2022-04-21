@@ -55,6 +55,6 @@ def get_recall_mrr(indices, targets, k=20):
         mrr (float): the mrr score
     """
     _, indices = torch.topk(indices, k, -1)
-    recall = get_recall(indices, targets)
-    mrr = get_mrr(indices, targets)
+    recall = get_recall(indices, targets-1)
+    mrr = get_mrr(indices, targets-1)
     return recall, mrr

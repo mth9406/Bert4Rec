@@ -20,10 +20,10 @@ class Bert4Rec(nn.Module):
         self.enc_layers = nn.ModuleList(
             [EncoderLayer(hidden_dim, num_head, inner_dim) for _ in range(N)]
         )
-        self.projection = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.Linear(hidden_dim, n_items)
-        )
+        # self.projection = nn.Sequential(
+        #     nn.Linear(hidden_dim, hidden_dim),
+        #     nn.Linear(hidden_dim, n_items)
+        # )
 
         self.dropout = nn.Dropout(0.1)
 
@@ -43,7 +43,8 @@ class Bert4Rec(nn.Module):
             output = enc_layer(output, mask)
         # (bs, item_len, hidden_dim)
         output = output[:, -1, :] # (bs, hidden_dim)
-        output = self.projection(output)
+        # output = self.projection(output)
+        output = output@(self.embedding.weight.T)
         return output
 
 class GLBert4Rec(nn.Module):
@@ -113,7 +114,7 @@ class GLBert4Rec(nn.Module):
         output = output.unsqueeze(1)
         # (bs, 1, hidden_dim)
         # obtain scores
-        output = output@(self.embedding.weight[1:].T)
+        output = output@(self.embedding.weight.T)
         # (bs, 1, hidden_dim) @ (hidden_dim, n_items)
         # (bs, 1, V)
         output = output.squeeze()
