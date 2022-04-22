@@ -5,12 +5,6 @@ Created on 17 Sep, 2019
 
 Reference: https://github.com/CRIPAC-DIG/SR-GNN/blob/master/datasets/preprocess.py
 
-预处理基本流程：
-1. 创建两个字典sess_clicks和sess_date来分别保存session的相关信息。两个字典都以sessionId为键，其中session_click以一个Session中用户先后点击的物品id
-构成的List为值；session_date以一个Session中最后一次点击的时间作为值，后续用于训练集和测试集的划分；
-2. 过滤长度为1的Session和出现次数小于5次的物品；
-3. 依据日期划分训练集和测试集。其中Yoochoose数据集以最后一天时长内的Session作为测试集，Diginetica数据集以最后一周时长内的Session作为测试集；
-4. 分解每个Session生成最终的数据格式。每个Session中以不包括最后一个物品的其他物品作为特征，以最后一个物品作为标签。同时把物品的id重新编码成从1开始递增的自然数序列
 """
 
 import argparse
