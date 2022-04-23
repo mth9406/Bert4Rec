@@ -1,4 +1,5 @@
 from layers import *
+import torch.nn.functional as F
 
 class Bert4Rec(nn.Module):
 
@@ -70,12 +71,9 @@ class GLBert4Rec(nn.Module):
 
         self.dropout = nn.Dropout(0.1)
 
-        self.projection_att = nn.Linear(hidden_dim, 1)
+        self.projection_att = nn.Linear(hidden_dim, 1, bias=False)
         # to obtain a global attention
-
-        self.projection_sess = nn.Linear(2*hidden_dim, hidden_dim)
-        # to obtain a session representation
-
+        
     def forward(self, input):
         device= input.device
         bs, item_len = input.shape[:2] # 0, 1
@@ -91,25 +89,14 @@ class GLBert4Rec(nn.Module):
         for enc_layer in self.enc_layers:
             output = enc_layer(output, mask)
             # (bs, item_len, hidden_dim)
-        output_local = output[:, -1, :] 
-        # (bs, hidden_dim)
-        # to represent user's current interest
 
         att = self.projection_att(output)
-        att = att / att.sum(dim= 1, keepdim= True)
+        # att = att / att.sum(dim= 1, keepdim= True)
+        att = F.softmax(att, dim=1)
         # (bs, item_len, 1)
         output = output.permute(0,2,1)
         # (bs, hidden_dim, item_len)
         output = (output @ att).squeeze() 
-        # (bs, hidden_dim)
-
-        # output_global
-        output = torch.cat([output_local, output], dim= 1)  
-        del output_local
-        # (bs, 2*hidden_dim)      
-
-        output = self.projection_sess(output)
-        # seesion embedding
         # (bs, hidden_dim)
         output = output.unsqueeze(1)
         # (bs, 1, hidden_dim)
