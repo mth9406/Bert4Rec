@@ -214,7 +214,8 @@ def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, 
     sum_epoch_loss = 0
 
     start = time.time()
-    for i, (seq, target, lens) in tqdm(enumerate(train_loader), total=len(train_loader)):
+    # for i, (seq, target, lens) in tqdm(enumerate(train_loader), total=len(train_loader)):
+    for i, (seq, target, lens) in enumerate(train_loader):
         seq = seq.to(device)
         target = target.to(device)
         
