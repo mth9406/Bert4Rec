@@ -10,7 +10,7 @@ Here are two datasets used in this repo... After downloading the datasets, you c
 
 # How to use
 First of all, run the file `datasets/preprocess.py` to preprocess "YOOCHOOSE" or "DIGNETICA".
-
+and then, run main.py. Below describes how to train a model using main.py.
 ```bash
 usage: preprocess.py [-h] [--dataset DATASET]
 
