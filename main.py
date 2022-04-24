@@ -32,6 +32,7 @@ parser.add_argument('--lr_dc_step', type=int, default=80, help='the number of st
 parser.add_argument('--patience', type=int, default=30, help='patience of early stopping condition')
 parser.add_argument('--model_path', type=str, default='./', help='a path to sava a model')
 parser.add_argument('--log_aggr', type=int, default=200, help= 'training log print option')
+parser.add_argument('--sim_loss_coef', type= float, default=1e-6, help= 'penalty coef of similarity loss')
 
 # Model configs
 parser.add_argument('--model_type', type= int, default= 0, 
@@ -226,7 +227,7 @@ def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, 
         norms = torch.norm(emb, p=2, dim=-1)
         norms = torch.unsqueeze(norms, -1)@torch.unsqueeze(norms, 1)
         sim = sim / (norms + 1e-8)
-        loss = criterion(outputs, target) - 0.1 * torch.norm(sim)
+        loss = criterion(outputs, target) - args.sim_loss_coef * torch.norm(sim)
         loss.backward()
         optimizer.step() 
 
