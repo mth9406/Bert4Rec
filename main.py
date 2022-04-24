@@ -14,7 +14,7 @@ from torch.optim.lr_scheduler import StepLR
 
 from dataset import load_data, RecSysDataset
 # from metric import *
-from models import *
+from models import Bert4Rec, GLBert4Rec
 from utils import *
 
 
@@ -195,7 +195,7 @@ def validate(valid_loader, model, criterion):
         for seq, target, lens in valid_loader:
             seq = seq.to(device)
             target = target.to(device)
-            outputs = model(seq)
+            outputs, _, _ = model(seq)
             loss = criterion(outputs, target)
             logits = F.softmax(outputs, dim = 1)
             recall, mrr = get_recall_mrr(logits, target, k = args.topk)
@@ -220,8 +220,10 @@ def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, 
         target = target.to(device)
         
         optimizer.zero_grad()
-        outputs = model(seq)
-        loss = criterion(outputs, target)
+        outputs, emb, mask = model(seq)
+        sim = torch.matmul(emb, emb.permute(2,1)) # bs, item_len, item_len
+        sim = torch.masked_fill(sim, (mask==0), -1e+4)
+        loss = criterion(outputs, target) - sim.sum()
         loss.backward()
         optimizer.step() 
 

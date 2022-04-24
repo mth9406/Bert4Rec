@@ -37,7 +37,8 @@ class Bert4Rec(nn.Module):
         # [[0, 1, 2, ..., item_len-1],...,[0, 1, 2, ..., item_len-1]]
 
         # Embedding layer
-        output = self.dropout(self.embedding(input) + self.pos_embedding(pos))
+        emb = self.embedding(input) # (bs, item_len, hidden_dim)
+        output = self.dropout(emb + self.pos_embedding(pos))
 
         # Encoder layers
         for enc_layer in self.enc_layers:
@@ -46,7 +47,7 @@ class Bert4Rec(nn.Module):
         output = output[:, -1, :] # (bs, hidden_dim)
         # output = self.projection(output)
         output = output@(self.embedding.weight.T)
-        return output
+        return output, emb, mask
 
 class GLBert4Rec(nn.Module):
 
@@ -83,7 +84,8 @@ class GLBert4Rec(nn.Module):
         # [[0, 1, 2, ..., item_len-1],...,[0, 1, 2, ..., item_len-1]]
 
         # Embedding layer
-        output = self.dropout(self.embedding(input) + self.pos_embedding(pos))
+        emb = self.embedding(input)
+        output = self.dropout(emb + self.pos_embedding(pos))
 
         # Encoder layers
         for enc_layer in self.enc_layers:
@@ -107,7 +109,7 @@ class GLBert4Rec(nn.Module):
         output = output.squeeze()
         # (bs, n_items)
 
-        return output
+        return output, emb, mask
 
 # bert4rec = GLBert4Rec(10, 2, 10,2,20)
 # input = torch.LongTensor(
