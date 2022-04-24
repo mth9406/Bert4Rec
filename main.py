@@ -223,7 +223,7 @@ def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, 
         outputs, emb, mask = model(seq)
         sim = torch.matmul(emb, emb.transpose(2,1)) # bs, item_len, item_len
         sim = torch.masked_fill(sim, (mask==0), -1e+4)
-        loss = criterion(outputs, target) - sim.sum()
+        loss = criterion(outputs, target) - 0.1 * sim.sum()
         loss.backward()
         optimizer.step() 
 
