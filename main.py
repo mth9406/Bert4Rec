@@ -32,7 +32,7 @@ parser.add_argument('--lr_dc_step', type=int, default=80, help='the number of st
 parser.add_argument('--patience', type=int, default=30, help='patience of early stopping condition')
 parser.add_argument('--model_path', type=str, default='./', help='a path to sava a model')
 parser.add_argument('--log_aggr', type=int, default=200, help= 'training log print option')
-parser.add_argument('--sim_loss_coef', type= float, default=1e-6, help= 'penalty coef of similarity loss')
+parser.add_argument('--sim_loss_coef', type= float, default=1e-3, help= 'penalty coef of similarity loss')
 
 # Model configs
 parser.add_argument('--model_type', type= int, default= 0, 
@@ -94,13 +94,15 @@ def main():
         model_file = os.path.join(args.model_path, 'latest_checkpoint.pth.tar')
         ckpt = torch.load(model_file)
         criterion = nn.CrossEntropyLoss()
+        cosineEmbLoss = nn.CosineEmbeddingLoss()
         model.load_state_dict(ckpt['state_dict'])
-        recall, mrr, val_loss = validate(test_loader, model, criterion)
+        recall, mrr, val_loss = validate(test_loader, model, criterion, cosineEmbLoss)
         print("Test: Recall@{}: {:.4f}, MRR@{}: {:.4f},  Val_loss: {:.4f}".format(args.topk, recall, args.topk, mrr, val_loss))
         return    
 
     optimizer = optim.Adam(model.parameters(), args.lr)
     criterion = nn.CrossEntropyLoss()
+    cosineEmbLoss = nn.CosineEmbeddingLoss()
     scheduler = StepLR(optimizer, step_size = args.lr_dc_step, gamma = args.lr_dc)
     
     early_stopping = EarlyStopping(
@@ -111,10 +113,10 @@ def main():
 
     for epoch in tqdm(range(args.epoch)):
         # train for one epoch
-        trainForEpoch(train_loader, model, optimizer, epoch, args.epoch, criterion, log_aggr = args.log_aggr)
+        trainForEpoch(train_loader, model, optimizer, epoch, args.epoch, criterion, cosineEmbLoss, log_aggr = args.log_aggr)
         scheduler.step()
 
-        recall, mrr, val_loss = validate(valid_loader, model, criterion)
+        recall, mrr, val_loss = validate(valid_loader, model, criterion, cosineEmbLoss)
         print('Epoch {} validation: Recall@{}: {:.4f}, MRR@{}: {:.4f}, Val_loss: {:.4f} \n'.format(epoch, args.topk, recall, args.topk, mrr, val_loss))
 
         # store best loss and save a model checkpoint
@@ -187,7 +189,7 @@ def get_recall_mrr(indices, targets, k=20):
     mrr = get_mrr(indices, targets)
     return recall, mrr
 
-def validate(valid_loader, model, criterion):
+def validate(valid_loader, model, criterion, cosineEmbLoss):
     model.eval()
     recalls = []
     mrrs = []
@@ -196,8 +198,11 @@ def validate(valid_loader, model, criterion):
         for seq, target, lens in valid_loader:
             seq = seq.to(device)
             target = target.to(device)
-            outputs, _, _ = model(seq)
-            loss = criterion(outputs, target)
+            outputs, emb, mask = model(seq)
+            cosine_loss= 0
+            for i, emb_i in enumerate(emb):
+                cosine_loss += cosineEmbLoss(emb_i[:lens[i]-1], emb_i[1:lens[i]], torch.LongTensor(lens[i]-1)) # session_len, hidden_dim
+            loss = criterion(outputs, target) + args.sim_loss_coef * cosine_loss / emb.shape[0]
             logits = F.softmax(outputs, dim = 1)
             recall, mrr = get_recall_mrr(logits, target, k = args.topk)
             recalls.append(recall)
@@ -209,7 +214,7 @@ def validate(valid_loader, model, criterion):
     mean_val_loss = np.mean(losses)
     return mean_recall, mean_mrr, mean_val_loss
 
-def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, log_aggr=1):
+def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, cosineEmbLoss, log_aggr=1):
     model.train()
 
     sum_epoch_loss = 0
@@ -222,12 +227,10 @@ def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, 
         
         optimizer.zero_grad()
         outputs, emb, mask = model(seq)
-        sim = torch.matmul(emb, emb.transpose(2,1)) # bs, item_len, item_len
-        sim = torch.masked_fill(sim, (mask==0), 1e-8)
-        norms = torch.norm(emb, p=2, dim=-1)
-        norms = torch.unsqueeze(norms, -1)@torch.unsqueeze(norms, 1)
-        sim = sim / (norms + 1e-8)
-        loss = criterion(outputs, target) - args.sim_loss_coef * torch.norm(sim)
+        cosine_loss= 0
+        for i, emb_i in enumerate(emb):
+            cosine_loss += cosineEmbLoss(emb_i[:lens[i]-1], emb_i[1:lens[i]], torch.LongTensor(lens[i]-1)) # session_len, hidden_dim
+        loss = criterion(outputs, target) + args.sim_loss_coef * cosine_loss / emb.shape[0]
         loss.backward()
         optimizer.step() 
 
