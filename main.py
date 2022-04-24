@@ -192,7 +192,7 @@ def validate(valid_loader, model, criterion):
     mrrs = []
     losses = []
     with torch.no_grad():
-        for seq, target, lens in tqdm(valid_loader):
+        for seq, target, lens in valid_loader:
             seq = seq.to(device)
             target = target.to(device)
             outputs = model(seq)
@@ -231,8 +231,8 @@ def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, 
         iter_num = epoch * len(train_loader) + i + 1
 
         if i % log_aggr == 0:
-            print('[TRAIN] epoch %d/%d batch loss: %.4f (avg %.4f) (%.2f im/s)'
-                % (epoch + 1, num_epochs, loss_val, sum_epoch_loss / (i + 1),
+            print('[TRAIN] epoch %d/%d batch %d/%d batch loss: %.4f (avg %.4f) (%.2f im/s)'
+                % (epoch + 1, num_epochs, i+1, len(train_loader), loss_val, sum_epoch_loss / (i + 1),
                   len(seq) / (time.time() - start)))
 
         start = time.time()
