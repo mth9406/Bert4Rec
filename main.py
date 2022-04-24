@@ -14,7 +14,7 @@ from torch.optim.lr_scheduler import StepLR
 
 from dataset import load_data, RecSysDataset
 # from metric import *
-from models import Bert4Rec, GLBert4Rec
+from models import *
 from utils import *
 
 

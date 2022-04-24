@@ -21,7 +21,7 @@ def load_data(root, valid_portion=0.1, maxlen=19, sort_by_len=False):
     :param maxlen: the max sequence length we use in the train/valid set.
     :type sort_by_len: bool
     :name sort_by_len: Sort by the sequence lenght for the train,
-        valid and test set. This allow faster execution as it cause
+        valid and test set. This allows faster execution as it cause
         less padding per minibatch. Another mechanism must be used to
         shuffle the train set at each epoch.
 
