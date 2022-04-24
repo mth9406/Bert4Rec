@@ -31,6 +31,7 @@ parser.add_argument('--lr_dc', type=float, default=0.1, help='learning rate deca
 parser.add_argument('--lr_dc_step', type=int, default=80, help='the number of steps after which the learning rate decay') 
 parser.add_argument('--patience', type=int, default=30, help='patience of early stopping condition')
 parser.add_argument('--model_path', type=str, default='./', help='a path to sava a model')
+parser.add_argument('--log_aggr', type=int, default=200, help= 'training log print option')
 
 # Model configs
 parser.add_argument('--model_type', type= int, default= 0, 
@@ -109,7 +110,7 @@ def main():
 
     for epoch in tqdm(range(args.epoch)):
         # train for one epoch
-        trainForEpoch(train_loader, model, optimizer, epoch, args.epoch, criterion, log_aggr = 200)
+        trainForEpoch(train_loader, model, optimizer, epoch, args.epoch, criterion, log_aggr = args.log_aggr)
         scheduler.step()
 
         recall, mrr, val_loss = validate(valid_loader, model, criterion)
