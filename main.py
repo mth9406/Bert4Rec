@@ -223,7 +223,7 @@ def trainForEpoch(train_loader, model, optimizer, epoch, num_epochs, criterion, 
         outputs, emb, mask = model(seq)
         sim = torch.matmul(emb, emb.transpose(2,1)) # bs, item_len, item_len
         sim = torch.masked_fill(sim, (mask==0), 1e-8)
-        norms = torch.norm(sim, p=2, dim=-1)
+        norms = torch.norm(emb, p=2, dim=-1)
         norms = torch.unsqueeze(norms, -1)@torch.unsqueeze(norms, 1)
         sim = sim / (norms + 1e-8)
         loss = criterion(outputs, target) - 0.1 * torch.norm(sim)
