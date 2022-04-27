@@ -1,8 +1,5 @@
 # BERT4Rec-PyTorch
 A PyTorch implementation of the BERT4Rec
-BERT4Rec is a model from the paper, 
-* Sun, F., Liu, J., Wu, J., Pei, C., Lin, X., Ou, W., & Jiang, P. (2019, November). BERT4Rec: Sequential recommendation with bidirectional encoder representations from transformer. In Proceedings of the 28th ACM international conference on information and knowledge management (pp. 1441-1450).
-
 Here are two datasets used in this repo... After downloading the datasets, you can put them in the folder `datasets/`
 
 * [YOOCHOOSE](https://www.kaggle.com/chadgostopp/recsys-challenge-2015)
@@ -59,3 +56,17 @@ optional arguments:
   --valid_portion VALID_PORTION
                         split the portion of training set as validation set
 ```
+# Experiment results
+					Test scores						Valid scores					
+	Config				Diginetica		YOOCHOOSE-4		YOOCHOOSE-64		Diginetica		YOOCHOOSE-4		YOOCHOOSE-64	
+Model	hidden_dim	inner_dim	N	num_head	Recall@20	MRR@20	Recall@20	MRR@20	Recall@20	MRR@20	Recall@20	MRR@20	Recall@20	MRR@20	Recall@20	MRR@20
+BERT	16	64	1	2												
+	32	128	1	2	50.39%	17.27%	68.91%	28.50%	68.11%	28.66%	55.68%	19.54%	70.39%	30.68%	67.35%	30.21%
+	64	256	1	2	50.28%	17.52%	69.94%	29.84%	68.99%	29.99%	54.81%	19.24%	71.35%	32.00%	68.05%	30.93%
+	128	512	1	2	48.93%	16.59%	69.58%	30.14%	68.28%	29.81%	53.55%	17.27%	71.58%	32.59%	67.96%	31.29%
+	256	1024	1	2												
+GLBERT	16	64	1	2												
+	32	128	1	2	50.49%	17.63%	69.16%	29.03%	67.60%	28.80%	54.80%	19.18%	70.65%	31.25%	67.42%	30.39%
+	64	256	1	2	49.48%	17.49%	70.04%	30.41%	67.31%	29.38%	53.62%	18.89%	71.54%	32.68%	66.95%	30.77%
+	128	512	1	2	47.60%	16.45%	66.65%	29.19%	66.65%	29.19%	51.79%	17.97%	66.62%	30.64%	66.62%	30.64%
+![image](https://user-images.githubusercontent.com/51608554/165471487-564a3fb0-5640-4d75-815a-e56c58563c87.png)
